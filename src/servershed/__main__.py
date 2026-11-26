@@ -1,6 +1,8 @@
-"""Step-1 entry point: `servershed probe [asset...]` prints raw probe facts.
+"""servershed entry point.
 
-The TUI comes next; this exists to see what the probe returns per host.
+  servershed                 start the TUI (same as `servershed tui`)
+  servershed probe [asset]   print raw probe facts
+  servershed lint            validate the inventory
 """
 from __future__ import annotations
 
@@ -56,10 +58,17 @@ def cmd_probe(args: argparse.Namespace) -> int:
     return 0 if all(r.ok for r in results) else 1
 
 
+def cmd_tui(args: argparse.Namespace) -> int:
+    from .tui.app import ServershedApp
+    ServershedApp(inventory.load(args.inventory)).run()
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(prog="servershed")
     p.add_argument("-i", "--inventory", default=default_inventory())
-    sub = p.add_subparsers(dest="cmd", required=True)
+    sub = p.add_subparsers(dest="cmd")
+    sub.add_parser("tui", help="interactive terminal UI (default)").set_defaults(func=cmd_tui)
     pr = sub.add_parser("probe", help="run the read-only probe and print raw facts")
     pr.add_argument("assets", nargs="*")
     pr.add_argument("--save", metavar="DIR", help="also save raw output per asset")
@@ -67,7 +76,7 @@ def main() -> int:
     sub.add_parser("lint", help="validate inventory.yaml").set_defaults(
         func=lambda a: (inventory.load(a.inventory), print("inventory ok"))[1] or 0)
     args = p.parse_args()
-    return args.func(args)
+    return getattr(args, "func", cmd_tui)(args)
 
 
 if __name__ == "__main__":

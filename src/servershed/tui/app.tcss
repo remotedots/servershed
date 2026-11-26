@@ -1,0 +1,19 @@
+Screen {
+    layout: horizontal;
+}
+
+#tree {
+    width: 34;
+    min-width: 24;
+    border-right: solid $panel-lighten-2;
+    padding: 0 1;
+}
+
+#detail-scroll {
+    width: 1fr;
+    padding: 0 2;
+}
+
+#detail {
+    width: 100%;
+}

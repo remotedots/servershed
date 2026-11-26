@@ -26,3 +26,4 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "servershed.core" = ["probe.sh"]
+"servershed.tui" = ["app.tcss"]
