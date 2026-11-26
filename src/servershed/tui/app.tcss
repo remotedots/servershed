@@ -47,13 +47,23 @@ FooterKey .footer-key--key {
     color: ansi_bright_black;
 }
 
+/* selection: blue, bold, underlined */
 #tree > .tree--cursor,
-#tree:focus > .tree--cursor,
-#tree > .tree--highlight,
-#tree > .tree--highlight-line {
+#tree:focus > .tree--cursor {
     background: transparent;
     color: $primary;
     text-style: bold underline;
+}
+
+/* mouse hover: only a plain underline on the label, no color, no row bar */
+#tree > .tree--highlight {
+    background: transparent;
+    text-style: underline;
+}
+
+#tree > .tree--highlight-line {
+    background: transparent;
+    text-style: none;
 }
 
 #detail-scroll {
