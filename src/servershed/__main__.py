@@ -60,7 +60,7 @@ def cmd_probe(args: argparse.Namespace) -> int:
 
 def cmd_tui(args: argparse.Namespace) -> int:
     from .tui.app import ServershedApp
-    ServershedApp(inventory.load(args.inventory)).run()
+    ServershedApp(inventory.load(args.inventory), dev=getattr(args, "dev", False)).run()
     return 0
 
 
@@ -68,7 +68,11 @@ def main() -> int:
     p = argparse.ArgumentParser(prog="servershed")
     p.add_argument("-i", "--inventory", default=default_inventory())
     sub = p.add_subparsers(dest="cmd")
-    sub.add_parser("tui", help="interactive terminal UI (default)").set_defaults(func=cmd_tui)
+    dev_help = "reload app.tcss live while the TUI runs (Python changes still need a restart)"
+    p.add_argument("--dev", action="store_true", help=dev_help)
+    tp = sub.add_parser("tui", help="interactive terminal UI (default)")
+    tp.add_argument("--dev", action="store_true", default=argparse.SUPPRESS, help=dev_help)
+    tp.set_defaults(func=cmd_tui)
     pr = sub.add_parser("probe", help="run the read-only probe and print raw facts")
     pr.add_argument("assets", nargs="*")
     pr.add_argument("--save", metavar="DIR", help="also save raw output per asset")

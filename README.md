@@ -4,6 +4,7 @@ Local, read-only overview of VPSes and shared-hosting accounts. TUI first (Textu
 
     python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
     .venv/bin/servershed                 # TUI: r refresh, R refresh all, s ssh, v raw facts, q quit
+    .venv/bin/servershed --dev           # same, app.tcss reloads live on save
     .venv/bin/servershed lint                 # validate inventory.yaml
     .venv/bin/servershed probe [asset...]     # run the read-only probe, print raw facts
     .venv/bin/servershed probe --save tests/fixtures/local   # real output, git-ignored

@@ -53,10 +53,11 @@ class ServershedApp(App):
         Binding("q", "quit", "quit"),
     ]
 
-    def __init__(self, inventory: Inventory, concurrency: int = 8):
+    def __init__(self, inventory: Inventory, concurrency: int = 8, dev: bool = False):
         # ANSI mode: the terminal's own background shows through in the main panel
         # (header/footer get their theme colors back in app.tcss)
-        super().__init__(ansi_color=True)
+        # dev: reload app.tcss whenever it is saved
+        super().__init__(ansi_color=True, watch_css=dev)
         self.inventory = inventory
         self.results: dict[str, ProbeResult | None] = {}
         self.assets: dict[str, tuple[Client, Asset]] = {
