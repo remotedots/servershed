@@ -8,6 +8,7 @@ tests/fixtures/local/
 *.db
 .servershed/
 dumps/
+dev-docs/
 *.raw.txt
 
 # --- python ---

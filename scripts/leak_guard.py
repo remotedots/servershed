@@ -34,6 +34,7 @@ FORBIDDEN_PATHS = [re.compile(p) for p in (
     r"^tests/fixtures/local/",
     r"\.(sqlite3?|db)$",
     r"(^|/)\.servershed/",
+    r"^dev-docs/",
 )]
 
 
