@@ -125,7 +125,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
 
     if not asset.probes:
         parts.append(Text("\nNot probed over SSH (external / client-owned).", style="dim"))
-        parts.append(_section("\nSites", [("sites", _lines(asset.sites))]) or Text(""))
+        parts.append(_section("\nSites", [("watched sites", _lines(asset.sites))]) or Text(""))
         return Group(*parts)
     if r is None:
         parts.append(Text("\nprobing…", style="dim"))
@@ -169,7 +169,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("docroot missing", _lines(r.all("docroot_missing"), "red")),
         ]),
         _section("\nWeb", [
-            ("sites", _lines(asset.sites)),
+            ("watched sites", _lines(asset.sites)),
             ("nginx enabled", _lines(r.all("nginx_site"))),
         ]),
         _section("\nNetwork", [("ipv6", _lines(r.all("ipv6")))]),
