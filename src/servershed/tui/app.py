@@ -54,8 +54,7 @@ class ServershedApp(App):
     ]
 
     def __init__(self, inventory: Inventory, concurrency: int = 8):
-        # use the terminal's own background and palette; no painted backgrounds
-        super().__init__(ansi_color=True)
+        super().__init__()
         self.inventory = inventory
         self.results: dict[str, ProbeResult | None] = {}
         self.nodes: dict[str, TreeNode] = {}

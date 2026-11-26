@@ -1,24 +1,14 @@
-/* No background colors anywhere: the terminal's own background shows through.
-   Selection is shown with text style and color only. */
+/* Main panel (tree + detail) has no background color: the terminal's own
+   background shows through. Header and footer keep the theme. Selection in the
+   tree is shown with text style and color only. */
 
 Screen {
     layout: horizontal;
-    background: transparent;
+    background: ansi_default;
 }
 
-Header, HeaderTitle, HeaderClock, HeaderIcon, Footer, FooterKey, FooterKey .footer-key--key,
-FooterKey .footer-key--description, #tree, #detail-scroll, #detail {
-    background: transparent;
-}
-
-Header {
-    color: $foreground;
-    text-style: bold;
-}
-
-FooterKey .footer-key--key {
-    color: $warning;
-    text-style: bold;
+#tree, #detail-scroll, #detail {
+    background: ansi_default;
 }
 
 #tree {
@@ -32,7 +22,7 @@ FooterKey .footer-key--key {
 #tree:focus > .tree--cursor,
 #tree > .tree--highlight,
 #tree > .tree--highlight-line {
-    background: transparent;
+    background: ansi_default;
     color: $primary;
     text-style: bold underline;
 }
@@ -40,9 +30,6 @@ FooterKey .footer-key--key {
 #detail-scroll {
     width: 1fr;
     padding: 0 2;
-    scrollbar-background: transparent;
-    scrollbar-background-hover: transparent;
-    scrollbar-background-active: transparent;
 }
 
 #detail {
