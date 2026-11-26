@@ -1,17 +1,48 @@
+/* No background colors anywhere: the terminal's own background shows through.
+   Selection is shown with text style and color only. */
+
 Screen {
     layout: horizontal;
+    background: transparent;
+}
+
+Header, HeaderTitle, HeaderClock, HeaderIcon, Footer, FooterKey, FooterKey .footer-key--key,
+FooterKey .footer-key--description, #tree, #detail-scroll, #detail {
+    background: transparent;
+}
+
+Header {
+    color: $foreground;
+    text-style: bold;
+}
+
+FooterKey .footer-key--key {
+    color: $warning;
+    text-style: bold;
 }
 
 #tree {
     width: 34;
     min-width: 24;
-    border-right: solid $panel-lighten-2;
+    border-right: solid $foreground 30%;
     padding: 0 1;
+}
+
+#tree > .tree--cursor,
+#tree:focus > .tree--cursor,
+#tree > .tree--highlight,
+#tree > .tree--highlight-line {
+    background: transparent;
+    color: $primary;
+    text-style: bold underline;
 }
 
 #detail-scroll {
     width: 1fr;
     padding: 0 2;
+    scrollbar-background: transparent;
+    scrollbar-background-hover: transparent;
+    scrollbar-background-active: transparent;
 }
 
 #detail {
