@@ -37,3 +37,13 @@ def test_real_inventory_if_present():
     real = ROOT / "inventory.yaml"
     if real.exists():
         inventory.load(real)
+
+
+def test_docroot_string_or_list():
+    from servershed.core.inventory import Asset
+    one = Asset(name="a", kind="shared", ssh="a", docroot="site/web")
+    many = Asset(name="b", kind="shared", ssh="b", docroot=["one/web", "two/web"])
+    none = Asset(name="c", kind="vps", ssh="c")
+    assert one.docroots == ["site/web"]
+    assert many.docroots == ["one/web", "two/web"]
+    assert none.docroots == []

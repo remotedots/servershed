@@ -20,8 +20,10 @@ clients:
         kind: shared
         ssh: kade-shared
         provider: ExampleShared
-        docroot: /www/htdocs/u000000/kade.example
-        sites: [kade.example]
+        docroot:                     # one path, or a list for several sites
+          - /www/htdocs/u000000/kade.example
+          - /www/htdocs/u000000/shop.kade.example
+        sites: [kade.example, shop.kade.example]
 
   - name: Nordwerk GmbH
     assets:

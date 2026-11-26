@@ -21,7 +21,7 @@ SSH_OPTS = [
 
 
 def docroots(asset: Asset) -> list[str]:
-    return [asset.docroot] if asset.docroot else []
+    return asset.docroots
 
 
 @dataclass

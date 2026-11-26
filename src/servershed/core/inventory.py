@@ -22,7 +22,7 @@ class Asset(BaseModel):
     ssh: str | None = None          # ~/.ssh/config Host alias
     probe: bool = True
     provider: str | None = None
-    docroot: str | None = None
+    docroot: str | list[str] | None = None   # one web root, or a list (several sites per account)
     notes: str | None = None
     sites: list[str] = []
 
@@ -33,6 +33,12 @@ class Asset(BaseModel):
         if self.probe and not self.ssh:
             raise ValueError(f"{self.name}: probe is on but no 'ssh' alias given")
         return self
+
+    @property
+    def docroots(self) -> list[str]:
+        if self.docroot is None:
+            return []
+        return [self.docroot] if isinstance(self.docroot, str) else list(self.docroot)
 
     @property
     def probes(self) -> bool:
