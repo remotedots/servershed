@@ -1,14 +1,25 @@
-/* Main panel (tree + detail) has no background color: the terminal's own
-   background shows through. Header and footer keep the theme. Selection in the
-   tree is shown with text style and color only. */
+/* Main panel (tree + detail): no background, the terminal's own shows through
+   (the app runs in ANSI mode). Header and footer keep the textual-dark colors.
+   Tree selection is shown with text style and color only. */
 
 Screen {
     layout: horizontal;
-    background: ansi_default;
 }
 
-#tree, #detail-scroll, #detail {
-    background: ansi_default;
+Header, HeaderTitle, HeaderClock, HeaderIcon {
+    background: #242F38;
+    color: #E0E0E0;
+}
+
+Footer, FooterKey, FooterKey .footer-key--description {
+    background: #242F38;
+    color: #E0E0E0;
+}
+
+FooterKey .footer-key--key {
+    background: #242F38;
+    color: #FFA62B;
+    text-style: bold;
 }
 
 #tree {
@@ -22,7 +33,7 @@ Screen {
 #tree:focus > .tree--cursor,
 #tree > .tree--highlight,
 #tree > .tree--highlight-line {
-    background: ansi_default;
+    background: transparent;
     color: $primary;
     text-style: bold underline;
 }
