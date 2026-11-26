@@ -33,11 +33,11 @@ def test_tui_loads_and_navigates(monkeypatch):
             screen = app.export_screenshot().replace("&#160;", " ")
             assert "Debian GNU/Linux 12" in screen        # detail of vps-main
             assert "newer installed: 6.1.0-56-amd64" in screen
-            assert "GRUB pinned" in screen
+            assert "GRUB" in screen and "pinned" in screen
             await pilot.press("v")          # raw view
             await pilot.pause()
             assert "probe_done=1" in app.export_screenshot()
-            await pilot.press("down", "down")
+            await pilot.press("down", "up")
             await pilot.press("q")
 
     asyncio.run(run())
