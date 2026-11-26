@@ -57,12 +57,20 @@ if has systemctl; then
   kv default_target "$(systemctl get-default 2>/dev/null)"
 fi
 
-# PHP: CLI default, every versioned binary, fpm sockets
-if has php; then kv php_cli "$(php -r 'echo PHP_VERSION;' 2>/dev/null)"; fi
+# PHP: CLI default, every versioned binary, fpm sockets.
+# Version comes from `-v` ("PHP 8.3.12 (cli) ..."): works for cli and cgi builds,
+# unlike `-r`, which cgi builds (e.g. IONOS) answer with their usage text.
+phpver() {
+  "$1" -v 2>/dev/null | sed -n '1s/^PHP \([0-9][0-9.]*\)[^(]*(\([a-z-]*\)).*/\1 \2/p'
+}
+if has php; then v=$(phpver php) && [ -n "$v" ] && kv php_cli "$v"; fi
+# user-level override some hosts use for drush/composer (e.g. ~/.local/bin/php -> php8.3-cli)
+if [ -x "$HOME/.local/bin/php" ]; then v=$(phpver "$HOME/.local/bin/php") && [ -n "$v" ] && kv php_local "$v"; fi
 for p in /usr/bin/php[0-9]*; do
-  case "${p##*/php}" in ""|*[!0-9.]*) continue ;; esac   # php8.4, php84; not php-config
+  n=${p##*/}; rest=${n#php}; rest=${rest%-cli}
+  case "$rest" in ""|*[!0-9.]*) continue ;; esac   # php8.4, php84, php8.3-cli; not php-config
   [ -x "$p" ] || continue
-  v=$("$p" -r 'echo PHP_VERSION;' 2>/dev/null) && kv php_bin "${p##*/} $v"
+  v=$(phpver "$p") && [ -n "$v" ] && kv php_bin "$n $v"
 done
 for s in /run/php/*.sock; do [ -S "$s" ] && kv php_fpm_sock "${s##*/}"; done
 

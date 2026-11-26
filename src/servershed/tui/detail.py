@@ -144,6 +144,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
         ]),
         _section("\nSoftware", [
             ("php cli", r.get("php_cli")),
+            ("php local", r.get("php_local")),
             ("php binaries", _lines(php)),
             ("php-fpm", _lines(r.all("php_fpm_sock"))),
             ("wordpress", _lines(r.all("wordpress"))),
