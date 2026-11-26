@@ -37,6 +37,11 @@ FooterKey .footer-key--key {
     scrollbar-color: ansi_bright_black;
 }
 
+/* hand pointer over the clickable list (OSC 22; ignored by terminals without support) */
+#estate {
+    pointer: pointer;
+}
+
 #estate:focus {
     border: none;
     border-right: solid ansi_bright_black;
