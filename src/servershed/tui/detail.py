@@ -119,7 +119,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
     head.append(f"   {client.name} · {asset.kind.value}")
     if asset.provider:
         head.append(f" · {asset.provider}")
-    parts: list = [head]
+    parts: list = [head, Text("")]
     if asset.notes:
         parts.append(Text(asset.notes, style="italic dim"))
 
@@ -134,9 +134,9 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
         parts.append(Text(f"\nprobe failed: {r.error}", style="red"))
         return Group(*parts)
 
-    parts.append(Text(f"probed in {r.seconds:.1f}s", style="dim"))
     if raw:
         parts.append(Text("\n" + r.raw.rstrip(), style="dim"))
+        parts.append(Text(f"probed in {r.seconds:.1f}s", style="dim"))
         return Group(*parts)
 
     php = [b for b in r.all("php_bin")]

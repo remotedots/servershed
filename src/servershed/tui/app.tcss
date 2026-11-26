@@ -85,7 +85,7 @@ FooterKey .footer-key--key {
 
 #detail-scroll {
     width: 1fr;
-    padding: 0 2;
+    padding: 1 4;
     scrollbar-size-vertical: 1;
     scrollbar-background: transparent;
     scrollbar-background-hover: transparent;
