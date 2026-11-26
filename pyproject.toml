@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "watchfiles"]
 
 [project.scripts]
 servershed = "servershed.__main__:main"
