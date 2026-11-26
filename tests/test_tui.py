@@ -32,8 +32,8 @@ def test_tui_loads_and_navigates(monkeypatch):
             assert "nordwerk-vps" not in [n for n, r in app.results.items() if r]
             screen = app.export_screenshot().replace("&#160;", " ")
             assert "Debian GNU/Linux 12" in screen        # detail of vps-main
-            assert "newer installed: 6.1.0-56-amd64" in screen
-            assert "GRUB" in screen and "pinned" in screen
+            assert "6.1.0-54-amd64" in screen and "(GRUB pinned)" in screen
+            assert "6.1.0-56-amd64" in screen                  # newer kernel listed
             await pilot.press("v")          # raw view
             await pilot.pause()
             assert "probe_done=1" in app.export_screenshot()

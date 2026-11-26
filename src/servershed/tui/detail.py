@@ -45,15 +45,15 @@ def _section(title: str, rows: list[tuple[str, str | Text]]) -> Table | None:
 
 
 def _kernel(r: ProbeResult) -> Text:
+    """Running kernel (+ "GRUB pinned" on the same line), newer installed ones below."""
     running = r.get("kernel") or "?"
-    installed = r.all("kernel_installed")
     out = Text(running)
-    newer = [k for k in installed if k != running and k > running]
-    if newer:
-        out.append(f"   newer installed: {', '.join(sorted(newer))}", style="yellow")
     grub = r.get("grub_default") or ""
     if running and running in grub:
-        out.append("   (GRUB pinned)", style="cyan")
+        out.append("  (GRUB pinned)", style="dim")
+    newer = sorted(k for k in r.all("kernel_installed") if k != running and k > running)
+    if newer:
+        out.append("\n" + "\n".join(newer), style="dim")
     return out
 
 
