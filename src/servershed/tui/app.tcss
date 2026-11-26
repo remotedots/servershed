@@ -22,11 +22,29 @@ FooterKey .footer-key--key {
     text-style: bold;
 }
 
+#tree, #detail-scroll, #detail {
+    background: transparent;
+}
+
 #tree {
     width: 34;
     min-width: 24;
     border-right: solid $foreground 30%;
     padding: 0 1;
+}
+
+/* no focus tint: the panel keeps the terminal background when focused */
+#tree:focus, #detail-scroll:focus, #tree:focus-within, #detail-scroll:focus-within {
+    background-tint: transparent;
+}
+
+#tree > .tree--guides,
+#tree > .tree--guides-hover,
+#tree > .tree--guides-selected,
+#tree:focus > .tree--guides,
+#tree:focus > .tree--guides-hover,
+#tree:focus > .tree--guides-selected {
+    color: ansi_bright_black;
 }
 
 #tree > .tree--cursor,
@@ -41,6 +59,13 @@ FooterKey .footer-key--key {
 #detail-scroll {
     width: 1fr;
     padding: 0 2;
+    scrollbar-size-vertical: 1;
+    scrollbar-background: transparent;
+    scrollbar-background-hover: transparent;
+    scrollbar-background-active: transparent;
+    scrollbar-color: ansi_bright_black;
+    scrollbar-color-hover: ansi_white;
+    scrollbar-color-active: ansi_white;
 }
 
 #detail {
