@@ -150,6 +150,23 @@ def _containers(values: list[str]) -> Table | Text:
     return t
 
 
+def _ipv4(addrs: list[str]) -> Text:
+    """IPv4 addresses; private ones (10/8, 172.16/12, 192.168/16) get a dim "(private)"
+    because on cloud VMs the public address is NAT'ed and not visible on the host."""
+    import ipaddress
+    out = Text()
+    for i, a in enumerate(addrs):
+        if i:
+            out.append("\n")
+        out.append(a)
+        try:
+            if ipaddress.ip_interface(a).ip.is_private:
+                out.append("  (private)", style="dim")
+        except ValueError:
+            pass
+    return out
+
+
 def _lines(values: list[str], style: str = "") -> Text:
     return Text("\n".join(values), style=style) if values else Text("")
 
@@ -161,7 +178,7 @@ def _systemd(r: ProbeResult) -> Text:
     out = Text(state, style="green" if state == "running" else "yellow")
     failed = r.all("unit_failed")
     if failed:
-        out.append(f"   failed: {', '.join(failed)}", style="yellow")
+        out.append(f"\nfailed: {', '.join(failed)}", style="yellow")
     return out
 
 
@@ -234,7 +251,10 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("watched sites", _site_links(asset.sites)),
             ("nginx enabled", _lines(r.all("nginx_site"))),
         ]),
-        _section("\nNetwork", [("ipv6", _lines(r.all("ipv6")))]),
+        _section("\nNetwork", [
+            ("ipv4", _ipv4(r.all("ipv4"))),
+            ("ipv6", _lines(r.all("ipv6"))),
+        ]),
     ]
     parts += [s for s in sections if s is not None]
     return Group(*parts)

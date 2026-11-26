@@ -85,6 +85,14 @@ if has docker; then
   docker ps --format '{{.Names}} {{.Image}} {{.Status}}' 2>/dev/null | sed 's/^/container=/'
 fi
 
+# global IPv4 addresses (to compare with A records). Cloud VMs (GCP, AWS) only see
+# their internal address here; the public one is NAT'ed outside the machine.
+if has ip; then
+  # skip container/VM bridges (docker0, br-*, veth*, virbr*, cni*): host-internal only
+  ip -4 -o addr show scope global 2>/dev/null |
+    awk '$2 !~ /^(docker|br-|veth|virbr|cni|flannel|cali)/ {print "ipv4=" $4}'
+fi
+
 # global IPv6 addresses (to compare with AAAA records)
 if has ip; then
   ip -6 -o addr show scope global 2>/dev/null | awk '{
