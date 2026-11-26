@@ -100,6 +100,20 @@ def _site_links(sites: list[str]) -> Text:
     return out
 
 
+def _columns(values: list[str]) -> Table | Text:
+    """Facts like "<path> <version>" as an aligned two-column table:
+    everything before the last word in the first column, the last word in the second."""
+    if not values:
+        return Text("")
+    t = Table.grid(padding=(0, 2))
+    t.add_column()
+    t.add_column()
+    for v in values:
+        head, _, last = v.rpartition(" ")
+        t.add_row(head or last, last if head else "")
+    return t
+
+
 def _lines(values: list[str], style: str = "") -> Text:
     return Text("\n".join(values), style=style) if values else Text("")
 
@@ -174,8 +188,8 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("php local", r.get("php_local")),
             ("php binaries", _php_bins(php)),
             ("php-fpm", _lines(r.all("php_fpm_sock"))),
-            ("wordpress", _lines(r.all("wordpress"))),
-            ("drupal", _lines(r.all("drupal"))),
+            ("wordpress", _columns(r.all("wordpress"))),
+            ("drupal", _columns(r.all("drupal"))),
             ("containers", _lines(r.all("container"))),
             ("htaccess php", _lines(r.all("htaccess_php_handler"), "yellow")),
             ("docroot missing", _lines(r.all("docroot_missing"), "red")),
