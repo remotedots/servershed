@@ -61,9 +61,12 @@ FooterKey .footer-key--key {
     text-style: none;
 }
 
+/* mouse hover: light-blue text only (the hover style spans the whole row,
+   so an underline would run to the panel edge) */
 #estate > .option-list--option-hover {
     background: transparent;
-    text-style: underline;
+    color: #7FB4E0;
+    text-style: none;
 }
 
 /* ---------- detail ---------- */
