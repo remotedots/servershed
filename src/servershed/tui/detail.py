@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from rich.console import Group
+from rich.rule import Rule
 from rich.table import Table
 from rich.style import Style
 from rich.text import Text
 
 from ..core.collect import ProbeResult
 from ..core.inventory import Asset, Client
+from ..core.rules import Finding, evaluate, newer_kernels
 
 
 KEY_WIDTH = 16          # same key column in every section, so values line up
@@ -51,7 +53,7 @@ def _kernel(r: ProbeResult) -> Text:
     grub = r.get("grub_default") or ""
     if running and running in grub:
         out.append("  (GRUB pinned)", style="dim")
-    newer = sorted(k for k in r.all("kernel_installed") if k != running and k > running)
+    newer = newer_kernels(r)
     if newer:
         out.append("\n" + "\n".join(newer), style="dim")
     return out
@@ -201,6 +203,34 @@ def _apt(r: ProbeResult) -> Text:
                 style="red" if sec not in (None, "0") else "yellow")
 
 
+FINDING_MARK = {"fail": ("■", "red"), "warn": ("▲", "yellow"), "info": ("i", "dim")}
+ACTION = "#7FB4E0"          # same light blue as the sidebar hover
+
+
+def _findings(found: list[Finding]) -> Group | None:
+    """Below the facts, as in the mockup: a "─ findings ───" rule, then per finding
+    mark + what is wrong, "→ what to do" in light blue, "$ command" dimmed."""
+    if not found:
+        return None
+    t = Table.grid(padding=(0, 2))
+    t.add_column(no_wrap=True)
+    t.add_column()
+    for i, f in enumerate(found):
+        mark, style = FINDING_MARK[f.severity]
+        body = Text()
+        body.append(f.title)
+        body.append(f" — {f.reason}", style="dim")
+        if f.action:
+            body.append(f"\n→ {f.action}", style=ACTION)
+        if f.cmd:
+            body.append(f"\n$ {f.cmd}", style="dim")
+        if i:
+            t.add_row("", "")
+        t.add_row(Text(mark, style=style), body)
+    rule = Rule(Text("─ findings", style="dim"), align="left", style="bright_black")
+    return Group(Text(""), rule, t)
+
+
 def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = False):
     head = Text()
     head.append(asset.name, style="bold")
@@ -265,5 +295,6 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("ipv6", _lines(r.all("ipv6"))),
         ]),
     ]
+    sections.append(_findings(evaluate(asset, r)))
     parts += [s for s in sections if s is not None]
     return Group(*parts)

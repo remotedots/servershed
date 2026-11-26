@@ -16,28 +16,35 @@ from textual.widgets.option_list import Option
 from ..core import collect
 from ..core.collect import ProbeResult
 from ..core.inventory import Asset, Client, Inventory
+from ..core.rules import evaluate
 from . import detail
 
 MARK = {
     "pending": ("…", "dim"),
     "ok": ("●", "green"),
     "warn": ("▲", "yellow"),
-    "fail": ("✖", "red"),
+    "fail": ("✖", "red"),          # probe failed: unreachable
+    "crit": ("■", "red"),          # reachable, but a finding needs action now
     "external": ("○", "dim"),
 }
 
 
 def status(asset: Asset, r: ProbeResult | None) -> str:
-    """Until the rules exist, status is reachability plus a few obvious signals."""
+    """Worst finding, plus stand-in signals for checks that have no rule yet."""
     if not asset.probes:
         return "external"
     if r is None:
         return "pending"
     if not r.ok:
         return "fail"
+    found = evaluate(asset, r)
+    if found and found[0].severity == "fail":
+        return "crit"
+    if found and found[0].severity == "warn":
+        return "warn"
+    # stand-ins until their rules exist (step 2A)
     if (r.get("systemd_state") not in (None, "running")
             or r.get("apt_security") not in (None, "0")
-            or r.get("reboot_required")
             or any(detail.container_in_trouble(c) for c in r.all("container"))):
         return "warn"
     return "ok"
@@ -123,7 +130,7 @@ class ServershedApp(App):
         for _, a in self.inventory.assets():
             s = status(a, self.results.get(a.name))
             counts[s] = counts.get(s, 0) + 1
-        parts = [f"{MARK[k][0]} {counts[k]}" for k in ("fail", "warn", "ok", "pending", "external")
+        parts = [f"{MARK[k][0]} {counts[k]}" for k in ("fail", "crit", "warn", "ok", "pending", "external")
                  if counts.get(k)]
         self.sub_title = "   ".join(parts)
 

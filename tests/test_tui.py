@@ -23,7 +23,7 @@ def test_tui_loads_and_navigates(monkeypatch):
 
     async def run():
         app = tui_app.ServershedApp(inv)
-        async with app.run_test(size=(120, 40)) as pilot:
+        async with app.run_test(size=(120, 70)) as pilot:
             await app.workers.wait_for_complete()
             await pilot.pause()
             # degraded systemd in the fixture -> warn; shared -> ok; external -> not probed
@@ -34,6 +34,7 @@ def test_tui_loads_and_navigates(monkeypatch):
             assert "Debian GNU/Linux 12" in screen        # detail of vps-main
             assert "6.1.0-54-amd64" in screen and "(GRUB pinned)" in screen
             assert "6.1.0-56-amd64" in screen                  # newer kernel listed
+            assert "reboot pending" in screen and "grub-reboot" in screen
             await pilot.press("v")          # raw view
             await pilot.pause()
             assert "probe_done=1" in app.export_screenshot()
@@ -77,3 +78,16 @@ def test_unhealthy_container_makes_asset_warn():
     assert tui_app.status(shared, mk(healthy)) == "ok"
     assert tui_app.status(shared, mk(sick)) == "warn"
     assert tui_app.status(shared, mk(stopped)) == "warn"
+
+
+def test_critical_finding_is_red_square_not_cross(monkeypatch):
+    from servershed.core import rules
+    from datetime import date
+    monkeypatch.setattr(rules, "_today", lambda: date(2026, 11, 27))
+    inv = inventory.load(ROOT / "inventory.example.yaml")
+    vps = next(a for _, a in inv.assets() if a.name == "vps-main")
+    raw = (FIX / "example-vps.txt").read_text().replace("os_version=12", "os_version=10")
+    r = ProbeResult("vps-main", ok=True, facts=parse(raw))
+    assert tui_app.status(vps, r) == "crit"
+    assert tui_app.MARK["crit"] == ("■", "red")
+    assert tui_app.status(vps, ProbeResult("vps-main", ok=False, error="timeout")) == "fail"
