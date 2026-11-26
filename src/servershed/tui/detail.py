@@ -73,6 +73,21 @@ def _disk(r: ProbeResult) -> Text:
     return out
 
 
+def _php_bins(bins: list[str]) -> Text:
+    """Few binaries: one per line. Many (shared hosts ship 4.4 to 8.6): one compact line."""
+    if len(bins) <= 4:
+        return _lines(bins)
+    versions = set()
+    for b in bins:
+        parts = b.split()
+        if len(parts) >= 2:
+            versions.add(".".join(parts[1].split(".")[:2]))
+    ordered = sorted(versions, key=lambda v: tuple(int(x) for x in v.split(".") if x.isdigit()))
+    out = Text("  ".join(ordered))
+    out.append(f"   ({len(bins)} binaries)", style="dim")
+    return out
+
+
 def _lines(values: list[str], style: str = "") -> Text:
     return Text("\n".join(values), style=style) if values else Text("")
 
@@ -145,7 +160,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
         _section("\nSoftware", [
             ("php cli", r.get("php_cli")),
             ("php local", r.get("php_local")),
-            ("php binaries", _lines(php)),
+            ("php binaries", _php_bins(php)),
             ("php-fpm", _lines(r.all("php_fpm_sock"))),
             ("wordpress", _lines(r.all("wordpress"))),
             ("containers", _lines(r.all("container"))),
