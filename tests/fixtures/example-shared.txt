@@ -1,0 +1,12 @@
+probe_version=1
+hostname=web01
+kernel=6.8.0-149-generic
+arch=x86_64
+os_id=ubuntu
+os_version=22.04
+os_name=Ubuntu 22.04.5 LTS
+php_cli=7.4.33
+php_bin=php74 7.4.33
+php_bin=php84 8.4.27
+wordpress=/www/htdocs/u000000/kade.example 7.1.5
+probe_done=1

@@ -1,0 +1,31 @@
+# Example inventory (fictional). Copy to inventory.yaml (git-ignored) and fill in.
+#
+# kind:   vps      -> full probe over ssh
+#         shared   -> probe over ssh (limited: no systemd/apt), plus http checks
+#         external -> http/cert/dns checks only, never ssh
+# probe:  false disables ssh entirely for that asset (e.g. client-owned machines)
+
+clients:
+  - name: Own infrastructure
+    assets:
+      - name: vps-main
+        kind: vps
+        ssh: vps-main                # Host alias from ~/.ssh/config
+        provider: ExampleHost
+        sites: [example.org, shop.example.org]
+
+  - name: Studio Kade
+    assets:
+      - name: kade-shared
+        kind: shared
+        ssh: kade-shared
+        provider: ExampleShared
+        docroot: /www/htdocs/u000000/kade.example
+        sites: [kade.example]
+
+  - name: Nordwerk GmbH
+    assets:
+      - name: nordwerk-vps
+        kind: external
+        probe: false                 # client-owned: never ssh
+        sites: [nordwerk.example]
