@@ -101,8 +101,11 @@ for v in /srv/www/*/wp-includes/version.php /srv/www/*/*/wp-includes/version.php
 done
 for d in "$@"; do
   v="$d/wp-includes/version.php"
+  dv="$d/core/lib/Drupal.php"
   if [ -r "$v" ]; then
     kv wordpress "$d $(sed -n "s/^\$wp_version = '\(.*\)';/\1/p" "$v")"
+  elif [ -r "$dv" ]; then
+    kv drupal "$d $(sed -n "s/^ *const VERSION = '\(.*\)';/\1/p" "$dv")"
   elif [ -d "$d" ]; then
     kv docroot "$d"
   else

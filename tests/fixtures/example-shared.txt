@@ -9,4 +9,5 @@ php_cli=7.4.33
 php_bin=php74 7.4.33
 php_bin=php84 8.4.27
 wordpress=/www/htdocs/u000000/kade.example 7.1.5
+drupal=/www/htdocs/u000000/shop.kade.example 10.6.23
 probe_done=1

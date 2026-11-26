@@ -163,6 +163,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("php binaries", _php_bins(php)),
             ("php-fpm", _lines(r.all("php_fpm_sock"))),
             ("wordpress", _lines(r.all("wordpress"))),
+            ("drupal", _lines(r.all("drupal"))),
             ("containers", _lines(r.all("container"))),
             ("htaccess php", _lines(r.all("htaccess_php_handler"), "yellow")),
             ("docroot missing", _lines(r.all("docroot_missing"), "red")),
