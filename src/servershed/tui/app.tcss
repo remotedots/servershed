@@ -97,4 +97,11 @@ FooterKey .footer-key--key {
 
 #detail {
     width: 100%;
+    /* watched sites are clickable: light blue like list hover, underline on hover */
+    link-color: #7FB4E0;
+    link-background: transparent;
+    link-style: none;
+    link-color-hover: #7FB4E0;
+    link-background-hover: transparent;
+    link-style-hover: underline;
 }

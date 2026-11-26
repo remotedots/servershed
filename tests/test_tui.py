@@ -41,3 +41,26 @@ def test_tui_loads_and_navigates(monkeypatch):
             await pilot.press("q")
 
     asyncio.run(run())
+
+
+def test_watched_site_click_opens_browser(monkeypatch):
+    monkeypatch.setattr(collect, "probe", fake_probe)
+    inv = inventory.load(ROOT / "inventory.example.yaml")
+    opened = []
+
+    async def run():
+        app = tui_app.ServershedApp(inv)
+        monkeypatch.setattr(app, "open_url", lambda url, **kw: opened.append(url))
+        async with app.run_test(size=(120, 50)) as pilot:
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            region = app.query_one("#detail").region
+            spot = next(((x, y) for y in range(region.y, region.bottom)
+                         for x in range(region.x, region.right)
+                         if "@click" in app.screen.get_style_at(x, y).meta), None)
+            assert spot, "no clickable site found in the detail pane"
+            await pilot.click(offset=spot)
+            await pilot.pause()
+
+    asyncio.run(run())
+    assert opened == ["https://example.org"]

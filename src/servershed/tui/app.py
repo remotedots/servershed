@@ -157,6 +157,11 @@ class ServershedApp(App):
             self.run_worker(self._probe(sel[1]), group="probe")
 
     # ---------- actions ----------
+    def action_open_site(self, url: str) -> None:
+        """Clicked a watched site in the detail pane: open it in the browser."""
+        self.open_url(url)
+        self.notify(f"opening {url}", timeout=2)
+
     def action_toggle_raw(self) -> None:
         self.raw = not self.raw
         self._show()

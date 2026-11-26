@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from rich.console import Group
 from rich.table import Table
+from rich.style import Style
 from rich.text import Text
 
 from ..core.collect import ProbeResult
@@ -88,6 +89,17 @@ def _php_bins(bins: list[str]) -> Text:
     return out
 
 
+def _site_links(sites: list[str]) -> Text:
+    """One clickable line per site; a click opens https://<site> in the browser."""
+    out = Text()
+    for i, site in enumerate(sites):
+        if i:
+            out.append("\n")
+        url = site if "://" in site else f"https://{site}"
+        out.append(site, style=Style(meta={"@click": f"app.open_site({url!r})"}))
+    return out
+
+
 def _lines(values: list[str], style: str = "") -> Text:
     return Text("\n".join(values), style=style) if values else Text("")
 
@@ -125,7 +137,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
 
     if not asset.probes:
         parts.append(Text("\nNot probed over SSH (external / client-owned).", style="dim"))
-        parts.append(_section("\nSites", [("watched sites", _lines(asset.sites))]) or Text(""))
+        parts.append(_section("\nSites", [("watched sites", _site_links(asset.sites))]) or Text(""))
         return Group(*parts)
     if r is None:
         parts.append(Text("\nprobing…", style="dim"))
@@ -169,7 +181,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("docroot missing", _lines(r.all("docroot_missing"), "red")),
         ]),
         _section("\nWeb", [
-            ("watched sites", _lines(asset.sites)),
+            ("watched sites", _site_links(asset.sites)),
             ("nginx enabled", _lines(r.all("nginx_site"))),
         ]),
         _section("\nNetwork", [("ipv6", _lines(r.all("ipv6")))]),
