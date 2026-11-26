@@ -2,6 +2,11 @@
 
 Local, read-only overview of VPSes and shared-hosting accounts. TUI first (Textual), CLI later.
 
+![servershed design mockup: client and site tree on the left, findings with suggested commands on the right, an SSH session in a tmux pane below](docs/mockup.png)
+
+*Design mockup with fictional data: this is where servershed is heading, not what it looks like today.
+Findings with suggested commands and the `p` paste into a tmux pane are not built yet.*
+
     python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
     .venv/bin/servershed                 # TUI: r refresh, R refresh all, s ssh, v raw facts, q quit
     .venv/bin/servershed --dev           # same, app.tcss reloads live on save
