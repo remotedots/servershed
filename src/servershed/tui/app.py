@@ -37,7 +37,8 @@ def status(asset: Asset, r: ProbeResult | None) -> str:
         return "fail"
     if (r.get("systemd_state") not in (None, "running")
             or r.get("apt_security") not in (None, "0")
-            or r.get("reboot_required")):
+            or r.get("reboot_required")
+            or any(detail.container_in_trouble(c) for c in r.all("container"))):
         return "warn"
     return "ok"
 

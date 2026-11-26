@@ -64,3 +64,16 @@ def test_watched_site_click_opens_browser(monkeypatch):
 
     asyncio.run(run())
     assert opened == ["https://example.org"]
+
+
+def test_unhealthy_container_makes_asset_warn():
+    inv = inventory.load(ROOT / "inventory.example.yaml")
+    shared = next(a for _, a in inv.assets() if a.name == "kade-shared")
+    base = (FIX / "example-shared.txt").read_text()
+    healthy = parse(base + "container=app-web-1 example/web:1 Up 5 minutes (healthy)\n")
+    sick = parse(base + "container=app-web-1 example/web:1 Up 5 minutes (unhealthy)\n")
+    stopped = parse(base + "container=app-web-1 example/web:1 Exited (1) 2 hours ago\n")
+    mk = lambda f: ProbeResult("kade-shared", ok=True, facts=f)
+    assert tui_app.status(shared, mk(healthy)) == "ok"
+    assert tui_app.status(shared, mk(sick)) == "warn"
+    assert tui_app.status(shared, mk(stopped)) == "warn"

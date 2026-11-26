@@ -114,6 +114,15 @@ def _columns(values: list[str]) -> Table | Text:
     return t
 
 
+BAD_CONTAINER_STATES = ("exited", "restarting", "unhealthy", "dead")
+
+
+def container_in_trouble(line: str) -> bool:
+    """A docker ps line ("<name> <image> <status...>") whose status needs attention."""
+    status = (line.split(" ", 2) + ["", ""])[2].lower()
+    return any(w in status for w in BAD_CONTAINER_STATES)
+
+
 def _shared_prefix(names: list[str]) -> str:
     """Longest prefix shared by all names that ends at a '-' or '_' (a whole word)."""
     common = names[0]
@@ -140,12 +149,12 @@ def _containers(values: list[str]) -> Table | Text:
     prefix = _shared_prefix([r[0] for r in rows]) if len(rows) > 1 else ""
     rows = [((n[len(prefix):] or n), i.rsplit("/", 1)[-1], st) for n, i, st in rows]
     name_w = min(max(len(r[0]) for r in rows), 24)
-    status_w = min(max(len(r[2]) for r in rows), 22)
+    status_w = min(max(len(r[2]) for r in rows), 30)   # fits "Up 12 minutes (unhealthy)"
     t.add_column(no_wrap=True, overflow="ellipsis", min_width=name_w, max_width=name_w)
     t.add_column(no_wrap=True, overflow="ellipsis", min_width=status_w, max_width=status_w)
     t.add_column(no_wrap=True, overflow="ellipsis", style="dim")
     for name, short, status in rows:
-        bad = any(w in status.lower() for w in ("exited", "restarting", "unhealthy", "dead"))
+        bad = any(w in status.lower() for w in BAD_CONTAINER_STATES)
         t.add_row(name, Text(status, style="red" if bad else ""), short)
     return t
 
