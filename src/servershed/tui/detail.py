@@ -114,6 +114,42 @@ def _columns(values: list[str]) -> Table | Text:
     return t
 
 
+def _shared_prefix(names: list[str]) -> str:
+    """Longest prefix shared by all names that ends at a '-' or '_' (a whole word)."""
+    common = names[0]
+    for n in names[1:]:
+        while not n.startswith(common):
+            common = common[:-1]
+    cut = max(common.rfind("-"), common.rfind("_"))
+    return common[:cut + 1] if cut >= 0 else ""
+
+
+def _containers(values: list[str]) -> Table | Text:
+    """docker ps lines "<name> <image> <status...>" as name / status / image columns.
+    Registry and namespace are dropped from the image (ghcr.io/plausible/x:tag -> x:tag),
+    a prefix shared by all names (the compose project, e.g. "plausible-ce-") is dropped,
+    and a stopped, restarting or unhealthy container is shown in red."""
+    if not values:
+        return Text("")
+    t = Table.grid(padding=(0, 2))
+    # columns: name / status / image. The image matters least, so it is last and is
+    # the one that gets shortened (ellipsis) when the pane is narrow.
+    # name and status get a guaranteed width (their longest value, capped), so when
+    # space runs out only the image column is shortened.
+    rows = [(v.split(" ", 2) + ["", ""])[:3] for v in values]
+    prefix = _shared_prefix([r[0] for r in rows]) if len(rows) > 1 else ""
+    rows = [((n[len(prefix):] or n), i.rsplit("/", 1)[-1], st) for n, i, st in rows]
+    name_w = min(max(len(r[0]) for r in rows), 24)
+    status_w = min(max(len(r[2]) for r in rows), 22)
+    t.add_column(no_wrap=True, overflow="ellipsis", min_width=name_w, max_width=name_w)
+    t.add_column(no_wrap=True, overflow="ellipsis", min_width=status_w, max_width=status_w)
+    t.add_column(no_wrap=True, overflow="ellipsis", style="dim")
+    for name, short, status in rows:
+        bad = any(w in status.lower() for w in ("exited", "restarting", "unhealthy", "dead"))
+        t.add_row(name, Text(status, style="red" if bad else ""), short)
+    return t
+
+
 def _lines(values: list[str], style: str = "") -> Text:
     return Text("\n".join(values), style=style) if values else Text("")
 
@@ -190,7 +226,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("php-fpm", _lines(r.all("php_fpm_sock"))),
             ("wordpress", _columns(r.all("wordpress"))),
             ("drupal", _columns(r.all("drupal"))),
-            ("containers", _lines(r.all("container"))),
+            ("containers", _containers(r.all("container"))),
             ("htaccess php", _lines(r.all("htaccess_php_handler"), "yellow")),
             ("docroot missing", _lines(r.all("docroot_missing"), "red")),
         ]),
