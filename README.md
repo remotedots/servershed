@@ -19,3 +19,13 @@ history and `.servershed/` cache are ignored. Start from `inventory.example.yaml
 ## License
 
 Apache-2.0, see `LICENSE`.
+
+## Leak guard
+
+A pre-commit and commit-msg hook block commits that contain real estate data. Enable once per clone:
+
+    git config core.hooksPath .githooks
+
+Terms come from your git-ignored `inventory.yaml` (names, ssh aliases and what `ssh -G` resolves them
+to, sites, docroots) plus `.servershed/denylist` (git-ignored, one term per line). Terms that also
+appear in `inventory.example.yaml` are skipped. Check with `.venv/bin/python scripts/leak_guard.py terms`.

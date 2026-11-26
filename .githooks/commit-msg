@@ -1,0 +1,5 @@
+#!/bin/sh
+# servershed leak guard (see scripts/leak_guard.py). Enable: git config core.hooksPath .githooks
+root=$(git rev-parse --show-toplevel)
+py="$root/.venv/bin/python"; [ -x "$py" ] || py=python3
+exec "$py" "$root/scripts/leak_guard.py" message "$1"
