@@ -6,7 +6,7 @@
 kv() { printf '%s=%s\n' "$1" "$(printf '%s' "$2" | tr '\n\r' '  ')"; }
 has() { command -v "$1" >/dev/null 2>&1; }
 
-kv probe_version 1
+kv probe_version 2
 kv hostname "$(hostname 2>/dev/null || uname -n)"
 kv kernel "$(uname -r)"
 kv arch "$(uname -m)"
@@ -52,8 +52,33 @@ fi
 if has systemctl; then
   kv systemd_state "$(systemctl is-system-running 2>/dev/null)"
   # descriptions can span lines (transient systemd-run units): keep only real unit names
-  systemctl list-units --state=failed --no-legend --plain --full 2>/dev/null |
-    awk '$1 ~ /^[A-Za-z0-9@_.:-]+\.(service|socket|timer|mount|automount|path|scope|slice|swap|target)$/ {print "unit_failed=" $1}'
+  failed=$(systemctl list-units --state=failed --no-legend --plain --full 2>/dev/null |
+    awk '$1 ~ /^[A-Za-z0-9@_.:-]+\.(service|socket|timer|mount|automount|path|scope|slice|swap|target)$/ {print $1}')
+  for u in $failed; do kv unit_failed "$u"; done
+  # transient units (systemd-run one-offs): systemd says so itself (Transient=yes).
+  # "unit_transient=<unit> <program> <script>": basenames only, never arguments (could hold secrets)
+  if [ -n "$failed" ]; then
+    # shellcheck disable=SC2086
+    systemctl show -p Id -p Transient -p Description $failed 2>/dev/null | awk '
+      function flush() {
+        if (t == "yes" && id != "") print "unit_transient=" id (cmd != "" ? " " cmd : "")
+        id = ""; t = ""; cmd = ""
+      }
+      /^$/ { flush(); next }
+      /^Id=/ { id = substr($0, 4) }
+      /^Transient=/ { t = substr($0, 11) }
+      /^Description=/ {
+        n = split(substr($0, 13), w, " "); k = 0
+        for (i = 1; i <= n && k < 2; i++) {
+          x = w[i]
+          if (x ~ /^[[]/ || x ~ /[=@:"\047]/) { if (k == 0) break; continue }
+          if (k > 0 && (x ~ /^-/ || x !~ /[\/.]/)) continue   # 2nd word: a file name only
+          sub(/.*\//, "", x)
+          if (x != "") { cmd = cmd (k ? " " : "") x; k++ }
+        }
+      }
+      END { flush() }'
+  fi
   kv default_target "$(systemctl get-default 2>/dev/null)"
 fi
 

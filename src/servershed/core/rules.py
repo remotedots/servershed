@@ -160,9 +160,68 @@ def os_end_of_life(asset: Asset, r: ProbeResult) -> list[Finding]:
     return []
 
 
+def _names(units: list[str], limit: int = 4) -> str:
+    shown = ", ".join(units[:limit])
+    return shown + (f" +{len(units) - limit} more" if len(units) > limit else "")
+
+
+def _oneoffs(r: ProbeResult) -> dict[str, str]:
+    """Failed units systemd marks Transient=yes (systemd-run one-offs) -> what they ran
+    ("node setup-stripe.mjs"; empty when unknown). From probe_version 2 on; older
+    probe output has none, so every failed unit counts as a real one."""
+    out = {}
+    for line in r.all("unit_transient"):
+        unit, _, ran = line.partition(" ")
+        out[unit] = ran
+    return out
+
+
+def systemd_failed(asset: Asset, r: ProbeResult) -> list[Finding]:
+    """systemd not "running". Failed services: `systemctl status` to see why. Failed one-off
+    runs (systemd-run, Transient=yes) are no broken service, but they keep the state
+    "degraded" until reset-failed, so the next real failure would go unnoticed: also a warning."""
+    if asset.kind is not Kind.vps:
+        return []
+    state = r.get("systemd_state")
+    if state in (None, "", "running", "offline", "unknown"):
+        return []
+    if state in ("initializing", "starting"):
+        return [Finding("systemd", "info", "system still booting",
+                        f"systemd state is {state}", None, "check again in a minute")]
+    failed = r.all("unit_failed")
+    oneoff = _oneoffs(r)
+    real = [u for u in failed if u not in oneoff]
+    runs = [u for u in failed if u in oneoff]
+    out = []
+    if real:
+        n = len(real)
+        out.append(Finding(
+            "systemd", "warn", f"{n} failed unit{'s' if n > 1 else ''}",
+            f"systemd {state}: {_names(real)}",
+            "systemctl status --no-pager -n 5 " + " ".join(real),
+            "see why it failed, then fix and restart it, or disable it if no longer needed"
+            if n == 1 else
+            "see why they failed, then fix and restart them, or disable what is no longer needed"))
+    if runs:
+        n = len(runs)
+        what = _names([f"{oneoff[u]} ({u})" if oneoff[u] else u for u in runs], 3)
+        out.append(Finding(
+            "systemd-oneoff", "warn", f"{n} failed one-off run{'s' if n > 1 else ''}",
+            f"systemd-run commands that failed keep systemd {state}: {what}",
+            "sudo systemctl reset-failed " + " ".join(runs),
+            "clear them so a real failure shows again; start one-offs with "
+            "`systemd-run --collect` next time"))
+    if not failed:
+        out.append(Finding("systemd", "warn", f"systemd {state}",
+                           "no failed units listed", "systemctl --failed --no-pager",
+                           "list what systemd considers broken"))
+    return out
+
+
 RULES: list[Callable[[Asset, ProbeResult], list[Finding]]] = [
     os_end_of_life,
     reboot_pending,
+    systemd_failed,
 ]
 
 

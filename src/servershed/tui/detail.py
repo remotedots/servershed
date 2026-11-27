@@ -31,14 +31,41 @@ def _uptime(s: str | None) -> str:
     return f"{d}d {rem // 3600}h"
 
 
-def _section(title: str, rows: list[tuple[str, str | Text]]) -> Table | None:
+# Colour in the facts comes only from findings: a row is yellow / red when a warn / critical
+# finding is about it (FACT_OF), otherwise plain. So a coloured fact always has a finding below.
+FACT_OF = {
+    "reboot-pending": "kernel",
+    "os-eol": "os",
+    "systemd": "systemd",
+    "systemd-oneoff": "systemd",
+}
+SEVERITY_STYLE = {"warn": "yellow", "fail": "red"}
+
+
+def _fact_styles(found: list[Finding]) -> dict[str, str]:
+    """Row key -> colour of the worst warn/critical finding about it (found is worst first)."""
+    out: dict[str, str] = {}
+    for f in found:
+        key = FACT_OF.get(f.rule)
+        if key and f.severity in SEVERITY_STYLE:
+            out.setdefault(key, SEVERITY_STYLE[f.severity])
+    return out
+
+
+def _section(title: str, rows: list[tuple[str, str | Text]],
+             styles: dict[str, str] | None = None) -> Table | None:
     rows = [(k, v) for k, v in rows if v is not None and str(v).strip()]
     if not rows:
         return None
+    styles = styles or {}
     t = Table.grid(padding=(0, 2))
     t.add_column(style="dim", width=KEY_WIDTH, no_wrap=True)
     t.add_column()
     for k, v in rows:
+        style = styles.get(k)
+        if style and isinstance(v, (str, Text)):
+            v = Text(v) if isinstance(v, str) else v.copy()
+            v.stylize(style)          # the value only; the label stays dim
         t.add_row(k, v)
     t.title = title
     t.title_justify = "left"
@@ -52,7 +79,7 @@ def _kernel(r: ProbeResult) -> Text:
     out = Text(running)
     grub = r.get("grub_default") or ""
     if running and running in grub:
-        out.append("  (GRUB pinned)", style="dim")
+        out.append(" (GRUB pinned)")
     newer = newer_kernels(r)
     if newer:
         out.append("\n" + "\n".join(newer), style="dim")
@@ -68,11 +95,9 @@ def _disk(r: ProbeResult) -> Text:
             continue
         seen.add(parts[1])
         mount, total, _, pct = parts[:4]
-        style = "red" if int(pct.rstrip("%") or 0) >= 90 else (
-            "yellow" if int(pct.rstrip("%") or 0) >= 80 else "")
         if out:
             out.append("\n")
-        out.append(f"{mount}  {pct} of {int(total) / 1048576:,.0f} GB", style=style)
+        out.append(f"{mount}  {pct} of {int(total) / 1048576:,.0f} GB")
     return out
 
 
@@ -139,7 +164,8 @@ def _containers(values: list[str]) -> Table | Text:
     """docker ps lines "<name> <image> <status...>" as name / status / image columns.
     Registry and namespace are dropped from the image (ghcr.io/plausible/x:tag -> x:tag),
     a prefix shared by all names (the compose project, e.g. "plausible-ce-") is dropped,
-    and a stopped, restarting or unhealthy container is shown in red."""
+    and a stopped, restarting or unhealthy container is shown in yellow (it makes the
+    asset ▲ until the container rule exists)."""
     if not values:
         return Text("")
     t = Table.grid(padding=(0, 2))
@@ -157,7 +183,7 @@ def _containers(values: list[str]) -> Table | Text:
     t.add_column(no_wrap=True, overflow="ellipsis", style="dim")
     for name, short, status in rows:
         bad = any(w in status.lower() for w in BAD_CONTAINER_STATES)
-        t.add_row(name, Text(status, style="red" if bad else ""), short)
+        t.add_row(name, Text(status, style="yellow" if bad else ""), short)
     return t
 
 
@@ -186,10 +212,10 @@ def _systemd(r: ProbeResult) -> Text:
     state = r.get("systemd_state")
     if not state:
         return Text("")
-    out = Text(state, style="green" if state == "running" else "yellow")
+    out = Text(state)
     failed = r.all("unit_failed")
     if failed:
-        out.append(f"\nfailed: {', '.join(failed)}", style="yellow")
+        out.append(f"\nfailed: {', '.join(failed)}")
     return out
 
 
@@ -198,9 +224,10 @@ def _apt(r: ProbeResult) -> Text:
     if up is None:
         return Text("")
     if up == "0":
-        return Text("up to date", style="green")
+        return Text("up to date")
+    # security updates make the asset ▲ (stand-in until the apt rule exists): same yellow
     return Text(f"{up} upgradable ({sec or 0} security)",
-                style="red" if sec not in (None, "0") else "yellow")
+                style="yellow" if sec not in (None, "0") else "")
 
 
 FINDING_MARK = {"fail": ("■", "red"), "warn": ("▲", "yellow"), "info": ("i", "dim")}
@@ -258,6 +285,8 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
         return Group(*parts)
 
     php = [b for b in r.all("php_bin")]
+    found = evaluate(asset, r)
+    styles = _fact_styles(found)
     sections = [
         _section("\nSystem", [
             ("os", r.get("os_name")),
@@ -267,7 +296,7 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("systemd", _systemd(r)),
             ("target", r.get("default_target")),
             ("updates", _apt(r)),
-        ]),
+        ], styles),
         _section("\nResources", [
             ("memory", f"{_mb(r.get('mem_avail_kb'))} free of {_mb(r.get('mem_total_kb'))}"
                        if r.get("mem_total_kb") else None),
@@ -283,8 +312,8 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("wordpress", _columns(r.all("wordpress"))),
             ("drupal", _columns(r.all("drupal"))),
             ("containers", _containers(r.all("container"))),
-            ("htaccess php", _lines(r.all("htaccess_php_handler"), "yellow")),
-            ("docroot missing", _lines(r.all("docroot_missing"), "red")),
+            ("htaccess php", _lines(r.all("htaccess_php_handler"))),
+            ("docroot missing", _lines(r.all("docroot_missing"))),
         ]),
         _section("\nWeb", [
             ("watched sites", _site_links(asset.sites)),
@@ -295,6 +324,6 @@ def render(client: Client, asset: Asset, r: ProbeResult | None, raw: bool = Fals
             ("ipv6", _lines(r.all("ipv6"))),
         ]),
     ]
-    sections.append(_findings(evaluate(asset, r)))
+    sections.append(_findings(found))
     parts += [s for s in sections if s is not None]
     return Group(*parts)

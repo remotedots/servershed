@@ -88,3 +88,56 @@ def test_eol_table_is_ordered():
     for table in (eol.DEBIAN, eol.UBUNTU):
         for r in table.values():
             assert r.security_end <= r.end
+
+
+# ---------- systemd ----------
+def systemd(state, *units, asset=VPS):
+    raw = base(systemd_state=state) + "".join(
+        u if "=" in u else f"unit_failed={u}\n" for u in units)
+    return [f for f in evaluate(asset, mk(raw)) if f.rule.startswith("systemd")]
+
+
+def test_failed_services_warn_with_status_cmd():
+    [f] = systemd("degraded", "dhcpcd.service", "motioneye.service")
+    assert f.severity == "warn" and f.title == "2 failed units"
+    assert f.reason == "systemd degraded: dhcpcd.service, motioneye.service"
+    assert f.cmd == "systemctl status --no-pager -n 5 dhcpcd.service motioneye.service"
+
+
+def test_oneoff_runs_by_transient_flag_are_warn_with_reset_failed():
+    found = systemd("degraded", "run-u178.service", "nginx.service", "stripe-setup.service",
+                    "run-backup.service",
+                    "unit_transient=run-u178.service node setup-stripe.mjs\n"
+                    "unit_transient=stripe-setup.service")
+    assert [(f.rule, f.severity) for f in found] == [("systemd", "warn"), ("systemd-oneoff", "warn")]
+    # the name does not decide: run-backup.service is a real unit, stripe-setup.service a one-off
+    assert found[0].cmd.endswith(" nginx.service run-backup.service")
+    assert found[1].title == "2 failed one-off runs"
+    assert "node setup-stripe.mjs (run-u178.service), stripe-setup.service" in found[1].reason
+    assert found[1].cmd == "sudo systemctl reset-failed run-u178.service stripe-setup.service"
+    assert "--collect" in found[1].action
+
+
+def test_old_probe_without_transient_flag_counts_all_as_real():
+    [f] = systemd("degraded", "run-u178.service")
+    assert f.rule == "systemd" and f.title == "1 failed unit"
+
+
+def test_systemd_quiet_cases():
+    assert systemd("running") == []
+    assert systemd("offline") == []                 # no systemd as init (containers)
+    assert systemd("degraded", "x.service", asset=SHARED) == []
+    [f] = systemd("starting")
+    assert f.severity == "info"
+    [f] = systemd("degraded")                       # degraded, but nothing listed
+    assert f.severity == "warn" and f.cmd == "systemctl --failed --no-pager"
+
+
+def test_fact_colour_comes_from_findings():
+    from servershed.tui.detail import _fact_styles
+    raw = (FIX / "example-vps.txt").read_text()
+    styles = _fact_styles(evaluate(VPS, mk(raw)))
+    assert styles["kernel"] == "yellow"         # reboot pending
+    assert styles["systemd"] == "yellow"        # failed unit
+    assert "os" not in styles                   # Debian 12 on LTS is only info
+    assert "disk" not in styles                 # no disk rule yet: plain

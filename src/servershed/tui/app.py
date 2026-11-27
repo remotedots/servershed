@@ -43,8 +43,7 @@ def status(asset: Asset, r: ProbeResult | None) -> str:
     if found and found[0].severity == "warn":
         return "warn"
     # stand-ins until their rules exist (step 2A)
-    if (r.get("systemd_state") not in (None, "running")
-            or r.get("apt_security") not in (None, "0")
+    if (r.get("apt_security") not in (None, "0")
             or any(detail.container_in_trouble(c) for c in r.all("container"))):
         return "warn"
     return "ok"
